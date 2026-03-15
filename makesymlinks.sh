@@ -12,6 +12,9 @@ files="bashrc screenrc gitconfig tmux.conf"    # list of files/folders to symlin
 
 ##########
 
+# Git clone 
+git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+
 # create dotfiles_old in homedir
 echo -n "Creating $olddir for backup of any existing dotfiles in ~ ..."
 mkdir -p $olddir
