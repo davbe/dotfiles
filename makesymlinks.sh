@@ -8,7 +8,7 @@
 
 dir=~/dotfiles                    # dotfiles directory
 olddir=~/dotfiles_old             # old dotfiles backup directory
-files="bashrc screenrc gitconfig tmux.conf"    # list of files/folders to symlink in homedir
+files="bash_prompt tmux.conf vimrc"      # list of files/folders to symlink in homedir
 
 ##########
 
@@ -33,6 +33,14 @@ for file in $files; do
     echo "Creating symlink to $file in home directory."
     ln -s $dir/$file ~/.$file
 done
+
+cat >> ~/.bashrc << 'EOF'
+
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export COLORTERM=truecolor
+source ~/.bash_prompt
+EOF
 
 install_zsh () {
 # Test to see if zshell is installed.  If it is:
