@@ -7,7 +7,7 @@ call vundle#begin()                     " Vundle and initialize
 Plugin 'gmarik/Vundle.vim'              " let Vundle manage Vundle, required
 
 " Plugins
-Plugin 'nanotech/jellybeans.vim'        " Color scheme
+"Plugin 'nanotech/jellybeans.vim'        " Color scheme
 Plugin 'vim-airline/vim-airline'        " Status bar & tabs
 Plugin 'scrooloose/nerdtree'            " Tree explorer
 Plugin 'kien/ctrlp.vim'                 " Fuzzy file, buffer, mru, ... finder
@@ -82,6 +82,7 @@ noremap <Esc>[15~ <Esc>:w<CR>:!clear;python %<CR>
 noremap <Esc>[1;3C :bn<CR>              " Alt-Left
 noremap <Esc>[1;3D :bp<CR>              " Alt-Right
 
+set termguicolors
 colors tokyonight
 
 au BufNewFile,BufRead *.py
