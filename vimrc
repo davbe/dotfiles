@@ -13,7 +13,7 @@ Plugin 'scrooloose/nerdtree'            " Tree explorer
 Plugin 'kien/ctrlp.vim'                 " Fuzzy file, buffer, mru, ... finder
 Plugin 'tmhedberg/SimpylFold'           " Simple, correct folding for Python
 Plugin 'vim-scripts/indentpython.vim'   " Indentation script for python
-Bundle 'Valloric/YouCompleteMe'
+"Bundle 'Valloric/YouCompleteMe'
 Plugin 'vim-syntastic/syntastic'        " Syntax checking
 Plugin 'nvie/vim-flake8'                " Runs open file through Flake8
 Plugin 'qpkorr/vim-bufkill'             " Delete buffer without closing window
@@ -82,7 +82,7 @@ noremap <Esc>[15~ <Esc>:w<CR>:!clear;python %<CR>
 noremap <Esc>[1;3C :bn<CR>              " Alt-Left
 noremap <Esc>[1;3D :bp<CR>              " Alt-Right
 
-colors jellybeans
+colors tokyonight
 
 au BufNewFile,BufRead *.py
     \ set tabstop=4 |
