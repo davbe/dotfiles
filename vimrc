@@ -84,6 +84,7 @@ noremap <Esc>[1;3D :bp<CR>              " Alt-Right
 
 set termguicolors
 colors tokyonight
+highlight Comment guifg=#7a8a9a
 
 au BufNewFile,BufRead *.py
     \ set tabstop=4 |
