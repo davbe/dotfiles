@@ -17,6 +17,7 @@ Bundle 'Valloric/YouCompleteMe'
 Plugin 'vim-syntastic/syntastic'        " Syntax checking
 Plugin 'nvie/vim-flake8'                " Runs open file through Flake8
 Plugin 'qpkorr/vim-bufkill'             " Delete buffer without closing window
+Plugin 'ghifarit53/tokyonight-vim'      " Tokyonight colorscheme
 
 call vundle#end()                       " required
 
