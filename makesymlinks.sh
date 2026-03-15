@@ -14,7 +14,7 @@ files="bash_prompt tmux.conf vimrc"      # list of files/folders to symlink in h
 
 # Git clone 
 git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
-vim -c 'PluginInstall' -c 'qall'
+vim -n -es --cmd 'set nomore' -u ~/.vimrc +PluginInstall +qall < /dev/null 2>/dev/null
 
 # create dotfiles_old in homedir
 echo -n "Creating $olddir for backup of any existing dotfiles in ~ ..."
