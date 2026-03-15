@@ -12,10 +12,6 @@ files="bash_prompt tmux.conf vimrc"      # list of files/folders to symlink in h
 
 ##########
 
-# Git clone 
-git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
-vim -n -es --cmd 'set nomore' -u ~/.vimrc +PluginInstall +qall < /dev/null 2>/dev/null
-
 # create dotfiles_old in homedir
 echo -n "Creating $olddir for backup of any existing dotfiles in ~ ..."
 mkdir -p $olddir
@@ -36,6 +32,7 @@ for file in $files; do
     ln -s $dir/$file ~/.$file
 done
 
+# some bashrc customizations
 cat >> ~/.bashrc << 'EOF'
 
 export LANG=en_US.UTF-8
@@ -45,6 +42,10 @@ source ~/.bash_prompt
 EOF
 
 source ~/.bashrc
+
+# vim configuration 
+git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+vim -n -es --cmd 'set nomore' -u ~/.vimrc +PluginInstall +qall < /dev/null 2>/dev/null
 
 install_zsh () {
 # Test to see if zshell is installed.  If it is:
