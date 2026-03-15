@@ -1,0 +1,75 @@
+# ── Tokyo Night Powerline Prompt ─────────────────────────────
+# Add this line to your ~/.bashrc:
+#   source ~/.bash_prompt
+
+# Nerd Font / Powerline characters
+ARROW_RIGHT=$''
+GIT_ICON=$''
+PENCIL=$'✎'
+
+# Tokyo Night palette
+C_RESET='\[\e[0m\]'
+BG_BLUE='\[\e[48;2;122;162;247m\]'
+BG_HL='\[\e[48;2;31;35;53m\]'
+BG_PURPLE='\[\e[48;2;187;154;247m\]'
+BG_RED='\[\e[48;2;247;118;142m\]'
+BG_TERM='\[\e[48;2;26;27;38m\]'
+FG_DARK='\[\e[38;2;22;22;30m\]'
+FG_FG='\[\e[38;2;169;177;214m\]'
+AF_BLUE='\[\e[38;2;122;162;247m\]'
+AF_HL='\[\e[38;2;31;35;53m\]'
+AF_PURPLE='\[\e[38;2;187;154;247m\]'
+AF_RED='\[\e[38;2;247;118;142m\]'
+
+__tokyo_prompt() {
+    local exit_code=$?
+    local git_info=''
+
+    # Git branch detection
+    if git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+        local branch
+        branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
+        local dirty
+        dirty=$(git status --porcelain 2>/dev/null | wc -l)
+        if [[ "$dirty" -gt 0 ]]; then
+            git_info=" ${GIT_ICON} ${branch} ${PENCIL} "
+        else
+            git_info=" ${GIT_ICON} ${branch} "
+        fi
+    fi
+
+    local PS=''
+
+    # Segment 1: user
+    PS+="${BG_BLUE}${FG_DARK} \u "
+    PS+="${BG_HL}${AF_BLUE}${ARROW_RIGHT}"
+
+    # Segment 2: path
+    PS+="${BG_HL}${FG_FG} \w "
+
+    if [[ -n "$git_info" ]]; then
+        PS+="${BG_PURPLE}${AF_HL}${ARROW_RIGHT}"
+        PS+="${BG_PURPLE}${FG_DARK}${git_info}"
+        if [[ "$exit_code" -ne 0 ]]; then
+            PS+="${BG_RED}${AF_PURPLE}${ARROW_RIGHT}"
+            PS+="${BG_RED}${FG_DARK} ✘ ${exit_code} "
+            PS+="${BG_TERM}${AF_RED}${ARROW_RIGHT}${C_RESET}"
+        else
+            PS+="${BG_TERM}${AF_PURPLE}${ARROW_RIGHT}${C_RESET}"
+        fi
+    else
+        if [[ "$exit_code" -ne 0 ]]; then
+            PS+="${BG_RED}${AF_HL}${ARROW_RIGHT}"
+            PS+="${BG_RED}${FG_DARK} ✘ ${exit_code} "
+            PS+="${BG_TERM}${AF_RED}${ARROW_RIGHT}${C_RESET}"
+        else
+            PS+="${BG_TERM}${AF_HL}${ARROW_RIGHT}${C_RESET}"
+        fi
+    fi
+
+    PS+='\[\e[38;2;122;162;247m\] ❯\[\e[0m\] '
+
+    PS1="$PS"
+}
+
+PROMPT_COMMAND=__tokyo_prompt
