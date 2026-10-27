@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# Fuzzy window switcher: lists every mapped window in the Omarchy menu, most
+# recently focused first, and jumps to the picked one (switching workspace).
+
+set -euo pipefail
+
+declare -A address_for
+options=()
+
+# Nerd Font glyph for a window class (the menu can't render image icons).
+icon_for() {
+  case "${1,,}" in
+    chrome-*|*-webapp*) printf $'\U000f059f' ;;                            # web app
+    chromium*|google-chrome*|brave*) printf $'' ;;
+    firefox*|librewolf*|zen*) printf $'' ;;
+    foot|alacritty|kitty|*ghostty*|tui.*|org.omarchy.*) printf $'' ;;
+    *nautilus*|thunar|*dolphin*|*files*) printf $'' ;;
+    code|code-*|*vscode*|cursor|zed*|dev.zed.*) printf $'\U000f0a1e' ;;
+    spotify*) printf $'' ;;
+    discord|vesktop|*webcord*) printf $'\U000f066f' ;;
+    slack) printf $'' ;;
+    *telegram*) printf $'' ;;
+    signal*|*whatsapp*|*chat*) printf $'' ;;
+    1password|*keepass*|*bitwarden*) printf $'' ;;
+    obsidian|typora|*notes*) printf $'' ;;
+    *libreoffice*|*soffice*) printf $'' ;;
+    mpv|vlc|*celluloid*|*kdenlive*) printf $'' ;;
+    imv|*loupe*|*eog*|*gthumb*|*pinta*) printf $'' ;;
+    gimp*|*inkscape*|*krita*) printf $'' ;;
+    steam*) printf $'' ;;
+    *pavucontrol*|*wiremix*|*pulse*) printf $'' ;;
+    *localsend*) printf $'' ;;
+    zoom|*obs*) printf $'' ;;
+    *thunderbird*|*evolution*|*geary*) printf $'' ;;
+    *calculator*) printf $'' ;;
+    *evince*|*papers*|*zathura*|*okular*) printf $'' ;;
+    *virtualbox*|*virt-manager*|*boxes*) printf $'' ;;
+    *) printf $'\U000f05af' ;;                                             # generic window
+  esac
+}
+
+while IFS=$'\t' read -r address workspace class title; do
+  icon=$(icon_for "$class")
+  [[ -z $title ]] && title="$class"
+  subtext="WS $workspace · $class"
+  key="$title"$'\t'"$subtext"
+  # Same title, class and workspace would collide; make each key unique.
+  n=2
+  while [[ -n ${address_for[$key]:-} ]]; do
+    key="$title"$'\t'"$subtext #$n"
+    ((n++))
+  done
+  address_for[$key]="$address"
+  options+=("$icon"$'\t'"$key")
+done < <(hyprctl clients -j | jq -r '
+  map(select(.mapped and (.hidden | not)))
+  | sort_by(.focusHistoryID)
+  | .[]
+  | [.address, .workspace.name, .class, (.title | gsub("[\t\n]"; " "))]
+  | @tsv')
+
+(( ${#options[@]} == 0 )) && exit 0
+
+selection=$(omarchy-menu-select "Windows" "${options[@]}" -- --width 700) || exit 0
+address="${address_for[$selection]:-}"
+[[ -z $address ]] && exit 1
+
+hyprctl dispatch "hl.dsp.focus({ window = \"address:$address\" })" >/dev/null
