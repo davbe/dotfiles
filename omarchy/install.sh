@@ -16,6 +16,8 @@ done
 # The window switcher's menu (with Alt+letter hotkeys) is built from Omarchy's
 # own menu, and rebuilt after every Omarchy update to keep up with it.
 "$dir"/plugins/window-switcher/build
+# A freshly built plugin isn't known to the running shell until it rescans.
+omarchy-shell shell rescanPlugins
 if ! jq -e 'any(.plugins[]?; .id == "daf.window-switcher")' ~/.config/omarchy/shell.json >/dev/null 2>&1; then
   omarchy-plugin-enable daf.window-switcher
 fi
