@@ -2,11 +2,17 @@
 
 # Fuzzy window switcher: lists every mapped window in the Omarchy menu, most
 # recently focused first, and jumps to the picked one (switching workspace).
+# Each window also gets a letter, preferably from its app name: Alt+<letter>
+# jumps to it straight away.
 
 set -euo pipefail
 
 declare -A address_for
 options=()
+names=()
+titles=()
+hotkeys=()
+used_letters=""
 
 # Nerd Font glyph for a window class (the menu can't render image icons).
 icon_for() {
@@ -40,6 +46,31 @@ icon_for() {
   esac
 }
 
+# Short app name to draw a hotkey from: chrome-chatgpt.com__-Default → chatgpt,
+# org.gnome.Nautilus → nautilus.
+app_name() {
+  local name=${1,,}
+  case $name in
+    chrome-*) name=${name#chrome-}; name=${name%%[._]*} ;;
+    *.*) name=${name##*.} ;;
+  esac
+  printf '%s' "$name"
+}
+
+# Sets hotkey to the first free letter of $1, else of the alphabet ("" when all
+# 26 are taken).
+pick_hotkey() {
+  local candidates="${1,,}abcdefghijklmnopqrstuvwxyz" c i
+  hotkey=""
+  for (( i = 0; i < ${#candidates}; i++ )); do
+    c=${candidates:i:1}
+    [[ $c == [a-z] && $used_letters != *"$c"* ]] || continue
+    hotkey=$c
+    used_letters+=$c
+    return
+  done
+}
+
 while IFS=$'\t' read -r address workspace class title; do
   icon=$(icon_for "$class")
   [[ -z $title ]] && title="$class"
@@ -53,6 +84,8 @@ while IFS=$'\t' read -r address workspace class title; do
   done
   address_for[$key]="$address"
   options+=("$icon"$'\t'"$key")
+  names+=("$(app_name "$class")")
+  titles+=("$title")
 done < <(hyprctl clients -j | jq -r '
   map(select(.mapped and (.hidden | not)))
   | sort_by(.focusHistoryID)
@@ -62,8 +95,36 @@ done < <(hyprctl clients -j | jq -r '
 
 (( ${#options[@]} == 0 )) && exit 0
 
-selection=$(omarchy-menu-select "Windows" "${options[@]}" -- --width 700) || exit 0
-address="${address_for[$selection]:-}"
+# Hand out letters in recency order, but serve the focused window (first row)
+# last: it is the one window you never need to jump to.
+for (( i = 1; i <= ${#options[@]}; i++ )); do
+  j=$(( i % ${#options[@]} ))
+  pick_hotkey "${names[j]}${titles[j]}"
+  hotkeys[j]=$hotkey
+done
+
+selection_file=$(mktemp)
+done_file=$(mktemp)
+rm -f "$done_file"
+trap 'rm -f "$selection_file" "$done_file"' EXIT
+
+# Same round trip as omarchy-menu-select, through the daf.window-switcher copy
+# of the menu, which also understands per-option hotkeys.
+payload=$(jq -n \
+  --arg selectionFile "$selection_file" \
+  --arg doneFile "$done_file" \
+  --argjson options "$(printf '%s\n' "${options[@]}" | jq -R . | jq -s .)" \
+  --argjson hotkeys "$(printf '%s\n' "${hotkeys[@]}" | jq -R . | jq -s .)" \
+  '{mode: "select", prompt: "Windows", width: 700, $options, $hotkeys, $selectionFile, $doneFile}')
+
+omarchy-shell shell summon daf.window-switcher "$payload" >/dev/null
+
+while [[ ! -e $done_file ]]; do
+  sleep 0.05
+done
+[[ -s $selection_file ]] || exit 0
+
+address="${address_for[$(<"$selection_file")]:-}"
 [[ -z $address ]] && exit 1
 
 hyprctl dispatch "hl.dsp.focus({ window = \"address:$address\" })" >/dev/null

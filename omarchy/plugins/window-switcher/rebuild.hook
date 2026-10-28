@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Rebuild the window switcher menu from the freshly updated Omarchy menu.
+~/dotfiles/omarchy/plugins/window-switcher/build

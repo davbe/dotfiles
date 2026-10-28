@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+# Build the daf.window-switcher shell plugin: a copy of Omarchy's own menu with
+# Alt+<letter> hotkeys added to select mode. The menu is regenerated from the
+# installed Omarchy sources (run again after updates) so it keeps up with
+# upstream. If upstream changed too much to patch, the previous build is kept.
+
+import json
+import os
+import shutil
+import sys
+import tempfile
+
+omarchy = os.environ.get("OMARCHY_PATH", "/usr/share/omarchy")
+source_dir = os.path.join(omarchy, "shell/plugins/menu")
+target_dir = os.path.expanduser("~/.config/omarchy/plugins/daf.window-switcher")
+
+PATCHES = [
+    # Hotkey letters arrive alongside the options, one per option ("" for none).
+    (
+        "  property var dmenuOptions: []\n",
+        "  property var dmenuOptions: []\n"
+        "  property var dmenuHotkeys: []\n",
+    ),
+    (
+        "    dmenuOptions = Array.isArray(payload.options) ? payload.options : []\n",
+        "    dmenuOptions = Array.isArray(payload.options) ? payload.options : []\n"
+        "    dmenuHotkeys = Array.isArray(payload.hotkeys) ? payload.hotkeys : []\n",
+    ),
+    (
+        "  function applyDmenuSelection(value) {\n",
+        """\
+  // Alt+<letter> picks the option holding that hotkey, even when the current
+  // filter hides it, and returns it exactly as Enter on its row would.
+  function activateHotkey(key) {
+    if (key < Qt.Key_A || key > Qt.Key_Z) return false
+    var index = root.dmenuHotkeys.indexOf(String.fromCharCode(key).toLowerCase())
+    if (index < 0 || index >= root.dmenuOptions.length) return false
+    var parts = String(root.dmenuOptions[index] || "").split("\\t")
+    if (parts.length > 1) parts.shift()
+    root.applyDmenuSelection(parts.join("\\t"))
+    return true
+  }
+
+  function applyDmenuSelection(value) {
+""",
+    ),
+    (
+        "          } else if (Util.editsFilter(event, root.filterText)) {\n",
+        "          } else if (root.mode === \"select\" && (event.modifiers & Qt.AltModifier) && root.activateHotkey(event.key)) {\n"
+        "            event.accepted = true\n"
+        "          } else if (Util.editsFilter(event, root.filterText)) {\n",
+    ),
+    (
+        "              readonly property bool hasIcon: row.icon.length > 0 || row.isApp\n",
+        "              readonly property bool hasIcon: row.icon.length > 0 || row.isApp\n"
+        "              readonly property string hotkey: row.kind === \"dmenu\" ? String(root.dmenuHotkeys[Number(row.itemId.slice(6))] || \"\") : \"\"\n",
+    ),
+    (
+        "                width: Style.space(14)\n",
+        "                width: row.hotkey ? Style.space(30) : Style.space(14)\n",
+    ),
+    (
+        "                spacing: 0\n",
+        """\
+                spacing: 0
+
+                Rectangle {
+                  visible: row.hotkey.length > 0
+                  width: Style.space(26)
+                  height: Style.space(22)
+                  radius: Math.min(root.cornerRadius, Style.space(5))
+                  color: "transparent"
+                  border.width: Style.spacing.hairline
+                  border.color: Util.alpha(row.hasCursor ? root.selectedText : root.foreground, 0.35)
+                  anchors.verticalCenter: parent.verticalCenter
+
+                  Text {
+                    anchors.centerIn: parent
+                    textFormat: Text.PlainText
+                    text: row.hotkey.toUpperCase()
+                    color: row.hasCursor ? root.selectedText : root.foreground
+                    opacity: 0.7
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.bodySmall
+                    font.weight: Font.Medium
+                  }
+                }
+""",
+    ),
+]
+
+MANIFEST = {
+    "schemaVersion": 1,
+    "id": "daf.window-switcher",
+    "name": "Window switcher",
+    "version": "1.0.0",
+    "author": "daf",
+    "description": "Omarchy menu with Alt+letter hotkeys, used by window-switcher",
+    "kinds": ["menu"],
+    "keepLoaded": True,
+    "entryPoints": {"menu": "Menu.qml"},
+}
+
+
+def main():
+    with open(os.path.join(source_dir, "Menu.qml"), encoding="utf-8") as f:
+        menu = f.read()
+
+    for old, new in PATCHES:
+        if menu.count(old) != 1:
+            print(f"window-switcher plugin: upstream Menu.qml changed, cannot patch:\n  {old.strip()}", file=sys.stderr)
+            return 1
+        menu = menu.replace(old, new)
+
+    os.makedirs(os.path.dirname(target_dir), exist_ok=True)
+    build_dir = tempfile.mkdtemp(prefix=".daf.window-switcher.", dir=os.path.dirname(target_dir))
+    shutil.copy(os.path.join(source_dir, "MenuModel.js"), build_dir)
+    with open(os.path.join(build_dir, "Menu.qml"), "w", encoding="utf-8") as f:
+        f.write(menu)
+    with open(os.path.join(build_dir, "manifest.json"), "w", encoding="utf-8") as f:
+        json.dump(MANIFEST, f, indent=2)
+        f.write("\n")
+    os.chmod(build_dir, 0o755)
+
+    shutil.rmtree(target_dir, ignore_errors=True)
+    os.rename(build_dir, target_dir)
+    print(f"Built {target_dir}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

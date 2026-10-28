@@ -13,6 +13,15 @@ for script in "$dir"/bin/*; do
   ln -sfn "$script" ~/.local/bin/"$(basename "$script")"
 done
 
+# The window switcher's menu (with Alt+letter hotkeys) is built from Omarchy's
+# own menu, and rebuilt after every Omarchy update to keep up with it.
+"$dir"/plugins/window-switcher/build
+if ! jq -e 'any(.plugins[]?; .id == "daf.window-switcher")' ~/.config/omarchy/shell.json >/dev/null 2>&1; then
+  omarchy-plugin-enable daf.window-switcher
+fi
+mkdir -p ~/.config/omarchy/hooks/post-update.d
+ln -sfn "$dir"/plugins/window-switcher/rebuild.hook ~/.config/omarchy/hooks/post-update.d/rebuild-window-switcher.hook
+
 if ! grep -q '"window-switcher"' "$bindings"; then
   echo "Adding SUPER+A window switcher binding to $bindings"
   cp "$bindings" "$bindings.bak.$(date +%s)"
